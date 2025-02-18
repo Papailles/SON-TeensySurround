@@ -48,14 +48,22 @@ void MyDsp::update(void) {
   for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
     float sineSample = sine.tick();
 
-    // Utilisation de x comme valeur de panoramique
-    // 0.0 = tout à gauche, 1.0 = tout à droite
+    // Utilisation de x comme valeur de panoramique (0.0 = gauche, 1.0 = droite)
     float gainGauche = 1.0f - x;
     float gainDroit  = x;
     
-    // Application de l'effet echo et du gain sur chaque canal
-    float sampleGauche = echo0.tick(sineSample) * 0.25 * gainGauche;
-    float sampleDroit  = echo1.tick(sineSample) * 0.25 * gainDroit;
+    // *** Test 1 : Augmentation temporaire du gain ***
+    // float sampleGauche = echo0.tick(sineSample) * 0.25 * gainGauche;
+    // float sampleDroit  = echo1.tick(sineSample) * 0.25 * gainDroit;
+    
+    // Test avec gain à 1.0
+    float sampleGauche = echo0.tick(sineSample) * 1.0f * gainGauche;
+    float sampleDroit  = echo1.tick(sineSample) * 1.0f * gainDroit;
+    
+    // *** Test 2 : Pour isoler le problème, bypasser l'effet echo ***  
+    // Décommente les lignes suivantes pour tester une sinusoïde pure :
+    // float sampleGauche = sineSample * gainGauche;
+    // float sampleDroit  = sineSample * gainDroit;
     
     // Clamp pour s'assurer que l'échantillon reste entre -1 et 1
     sampleGauche = max(-1.0f, min(1.0f, sampleGauche));
