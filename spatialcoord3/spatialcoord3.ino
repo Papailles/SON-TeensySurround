@@ -25,9 +25,9 @@ void setup() {
 }
 
 void loop() {
+  myDsp.setFreq(1000);
   int potValue = analogRead(potPin);
   float pan = potValue / 1023.0;  // Valeur comprise entre 0.0 et 1.0
   myDsp.setPosition(pan, 0);      // Met à jour le panoramique
-  myDsp.setFreq(1000);
   delay(300);
 }

@@ -2,6 +2,7 @@
 #include <cmath>
 
 #define MULT_16 32767
+#define PI 3.14159265358979323846
 
 // Constructeur avec panoramique initial au centre (0.5)
 MyDsp::MyDsp() : 
@@ -9,7 +10,7 @@ MyDsp::MyDsp() :
   sine(AUDIO_SAMPLE_RATE_EXACT),
   echo0(AUDIO_SAMPLE_RATE_EXACT, 10000),
   echo1(AUDIO_SAMPLE_RATE_EXACT, 7000),
-  x(0.5), // 0.5 correspond au centre
+  x(0.5), // 0.5 correspond au centre (panoramique)
   y(0.0)  // non utilisé
 {
   echo0.setDel(10000);
@@ -25,7 +26,7 @@ MyDsp::~MyDsp(){}
 // La valeur de y est ignorée
 void MyDsp::setPosition(float xValue, float yValue){
   x = constrain(xValue, 0.0, 1.0);
-  y = 0.0;  // on n'utilise pas y pour le panoramique
+  y = 0.0;
 }
 
 // Définition de la fréquence de la sinusoïde
@@ -47,25 +48,23 @@ void MyDsp::update(void) {
       
   for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
     float sineSample = sine.tick();
-
-    // Utilisation de x comme valeur de panoramique (0.0 = gauche, 1.0 = droite)
-    float gainGauche = 1.0f - x;
-    float gainDroit  = x;
     
-    // *** Test 1 : Augmentation temporaire du gain ***
-    // float sampleGauche = echo0.tick(sineSample) * 0.25 * gainGauche;
-    // float sampleDroit  = echo1.tick(sineSample) * 0.25 * gainDroit;
+    // On traite le signal par les deux effets echo, puis on fait la moyenne
+    float echoOut0 = echo0.tick(sineSample);
+    float echoOut1 = echo1.tick(sineSample);
+    float processedSample = (echoOut0 + echoOut1) * 0.5f;
     
-    // Test avec gain à 1.0
-    float sampleGauche = echo0.tick(sineSample) * 1.0f * gainGauche;
-    float sampleDroit  = echo1.tick(sineSample) * 1.0f * gainDroit;
+    // Loi de panning cos/sin pour une puissance constante :
+    // x = 0.0 -> angle = 0  -> gauche = cos(0)=1, droite = sin(0)=0
+    // x = 1.0 -> angle = π/2-> gauche = cos(π/2)=0, droite = sin(π/2)=1
+    float angle = x * (PI / 2.0f);
+    float gainGauche = cos(angle);
+    float gainDroit  = sin(angle);
     
-    // *** Test 2 : Pour isoler le problème, bypasser l'effet echo ***  
-    // Décommente les lignes suivantes pour tester une sinusoïde pure :
-    // float sampleGauche = sineSample * gainGauche;
-    // float sampleDroit  = sineSample * gainDroit;
+    float sampleGauche = processedSample * gainGauche;
+    float sampleDroit  = processedSample * gainDroit;
     
-    // Clamp pour s'assurer que l'échantillon reste entre -1 et 1
+    // Clamp des valeurs pour rester entre -1 et 1
     sampleGauche = max(-1.0f, min(1.0f, sampleGauche));
     sampleDroit  = max(-1.0f, min(1.0f, sampleDroit));
     
