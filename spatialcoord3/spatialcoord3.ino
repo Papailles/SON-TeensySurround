@@ -23,11 +23,8 @@ void setup() {
 }
 
 void loop() {
-    int potValue = analogRead(potPin);
-    float pan = potValue / 1023.0; // Convertir en 0.0 à 1.0
-    
-    mixerL.gain(0, 1.0 - pan);  // Moins à gauche si potValue ↑
-    mixerR.gain(0, pan);        // Plus à droite si potValue ↑
-    
-    delay(10);
+  int potValue = analogRead(potPin);
+  float pan = potValue / 1023.0;  // Valeur comprise entre 0.0 et 1.0
+  myDsp.setPosition(pan, 0);      // Met à jour le panoramique
+  delay(10);
 }
