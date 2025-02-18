@@ -15,7 +15,7 @@ const int potPin = A0;  // Potentiomètre sur A0
 void setup() {
     AudioMemory(12);
     audioShield.enable();
-    audioShield.volume(0.8);  // Volume global
+    audioShield.volume(0.5);  // Volume global
     
     // Initialisation du mixeur
     mixerL.gain(0, 0.5);  // Gain initial : 50% gauche
@@ -26,5 +26,6 @@ void loop() {
   int potValue = analogRead(potPin);
   float pan = potValue / 1023.0;  // Valeur comprise entre 0.0 et 1.0
   myDsp.setPosition(pan, 0);      // Met à jour le panoramique
-  delay(10);
+  myDsp.setFreq(1000)
+  delay(300);
 }
