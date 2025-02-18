@@ -1,2 +1,0 @@
-idf_component_register(SRCS "main.cpp" "AudioDsp.cpp" "../../lib/ButtonHandler.cpp" "../../lib/ES8388.cpp" "../../lib/SineTable.cpp" "../../lib/Phasor.cpp" "../../lib/Sine.cpp" "../../lib/Echo.cpp" INCLUDE_DIRS "")
-                    

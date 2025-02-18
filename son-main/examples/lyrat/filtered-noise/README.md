@@ -1,3 +1,0 @@
-# Crazy Sine
-
-A sine wave generating random notes and connected to an echo...

@@ -1,1 +1,0 @@
-This example simply shows how to create two FreeRtos task 
