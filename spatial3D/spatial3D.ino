@@ -16,14 +16,18 @@ const int potXPin = A0;
 const int potYPin = A2;
 const int potZPin = A3;
 
+float mtof(float note){
+  return pow(2.0,(note-69.0)/12.0)*440.0;
+}
+
+int tune[] = {60,62,57,60,62};
+int cnt=0;
+
 void setup() {
   Serial.begin(9600);
   AudioMemory(12);
   audioShield.enable();
-  audioShield.volume(0.3);
-
-  // Optionnel : définir une fréquence de base (par exemple 440 Hz)
-  myDsp.setFreq(440.0);
+  audioShield.volume(0.3);  
 }
 
 void loop() {
@@ -51,5 +55,7 @@ void loop() {
   Serial.print(" | z: ");
   Serial.println(posZ, 2);
 
+  myDsp.setFreq(mtof(tune[cnt]));
+  cnt = (cnt+1)%5;
   delay(300);
 }
