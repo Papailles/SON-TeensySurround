@@ -76,7 +76,7 @@ void MyDsp::update(void) {
   // Si Y_abs est très proche de 0, on fixe l'angle à ±90° selon le signe de X
   float azimuth = (Y_abs < 0.001f) 
                     ? ((X >= 0) ? PI/2.0f : -PI/2.0f)
-                    : atan2(X, Y_abs);
+                    : atan2(Y_abs, X);
   
   // Loi de panning à puissance constante :
   // Utilisation d'une rotation de 45° combinée à la moitié de l'azimuth
