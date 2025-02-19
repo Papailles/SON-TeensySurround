@@ -3,15 +3,16 @@
 
 #define MULT_16 32767
 
-// Constructeur avec panoramique initial au centre (0.5)
+// Constructeur avec position initiale au centre et source proche (x = 0.5, y = 0.0)
 MyDsp::MyDsp() : 
   AudioStream(AUDIO_OUTPUTS, new audio_block_t*[AUDIO_OUTPUTS]),
   sine(AUDIO_SAMPLE_RATE_EXACT),
   echo0(AUDIO_SAMPLE_RATE_EXACT, 10000),
   echo1(AUDIO_SAMPLE_RATE_EXACT, 7000),
-  x(0.5),         // Valeur cible du panning (0.0 = gauche, 1.0 = droite)
-  smoothedX(0.5), // Valeur utilisée pour un changement progressif
-  y(0.0)          // Non utilisé pour le moment
+  x(0.5),         // Valeur cible pour le panning (0.0 = gauche, 1.0 = droite)
+  y(0.0),         // Valeur cible pour la distance (0.0 = proche, 1.0 = lointain)
+  smoothedX(0.5), // Valeur lissée initiale pour x
+  smoothedY(0.0)  // Valeur lissée initiale pour y
 {
   echo0.setDel(10000);
   echo0.setFeedback(0.5);
@@ -21,10 +22,11 @@ MyDsp::MyDsp() :
 
 MyDsp::~MyDsp(){}
 
-// Mise à jour du panning : x correspond à la valeur cible (entre 0.0 et 1.0)
+// Mise à jour de la position : x et y sont compris entre 0.0 et 1.0
+// x contrôle le panning, y contrôle l'atténuation (distance)
 void MyDsp::setPosition(float xValue, float yValue){
   x = constrain(xValue, 0.0, 1.0);
-  y = 0.0;
+  y = constrain(yValue, 0.0, 1.0);
 }
 
 // Définition de la fréquence de la sinusoïde
@@ -35,24 +37,29 @@ void MyDsp::setFreq(float freq){
 void MyDsp::update(void) {
   audio_block_t* outBlock[AUDIO_OUTPUTS];
 
+  // Allocation des blocs audio pour chaque canal
   for (int channel = 0; channel < AUDIO_OUTPUTS; channel++) {
     outBlock[channel] = allocate(); 
     if (!outBlock[channel]) {
-      // Si aucun bloc n'est disponible, on quitte l'update
       return;
     }
   }
   
-  // Interpolation pour un basculement smooth
-  const float smoothingFactor = 0.01f; // Plus petit => transition plus lente et plus douce
+  // Interpolation smooth pour x et y
+  const float smoothingFactor = 0.01f; // Ajuste cette valeur pour des transitions plus lentes ou plus rapides
   smoothedX += smoothingFactor * (x - smoothedX);
+  smoothedY += smoothingFactor * (y - smoothedY);
   
-  // Loi de panning cos/sin pour une puissance constante :
-  // smoothedX = 0.0 => angle = 0    => gainLeft = cos(0)=1,  gainRight = sin(0)=0
-  // smoothedX = 1.0 => angle = π/2  => gainLeft = cos(π/2)=0, gainRight = sin(π/2)=1
+  // Calcul du panning à puissance constante pour le canal gauche/droit basé sur smoothedX
+  // smoothedX = 0.0 -> angle = 0      -> gainLeft = cos(0)=1, gainRight = sin(0)=0
+  // smoothedX = 1.0 -> angle = π/2    -> gainLeft = cos(π/2)=0, gainRight = sin(π/2)=1
   float angle = smoothedX * (PI / 2.0f);
   float gainLeft = cos(angle);
   float gainRight = sin(angle);
+  
+  // Utilisation de smoothedY pour moduler l'atténuation globale
+  // Ici, y = 0 signifie aucune atténuation (source proche) et y = 1 signifie volume très atténué (source lointaine)
+  float attenuation = 1.0f - smoothedY;
   
   for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
     float sineSample = sine.tick();
@@ -60,10 +67,10 @@ void MyDsp::update(void) {
     float echoOut1 = echo1.tick(sineSample);
     float processedSample = (echoOut0 + echoOut1) * 0.5f;
     
-    float leftSample = processedSample * gainLeft;
-    float rightSample = processedSample * gainRight;
+    float leftSample = processedSample * gainLeft * attenuation;
+    float rightSample = processedSample * gainRight * attenuation;
     
-    // Clamp pour éviter les dépassements
+    // Clamp des valeurs pour rester dans [-1, 1]
     leftSample = max(-1.0f, min(1.0f, leftSample));
     rightSample = max(-1.0f, min(1.0f, rightSample));
     
