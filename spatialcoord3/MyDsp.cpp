@@ -12,7 +12,9 @@ MyDsp::MyDsp() :
   x(0.5),         // Valeur cible pour le panning (0.0 = gauche, 1.0 = droite)
   y(0.0),         // Valeur cible pour la distance (0.0 = proche, 1.0 = lointain)
   smoothedX(0.5), // Valeur lissée initiale pour x
-  smoothedY(0.0)  // Valeur lissée initiale pour y
+  smoothedY(0.0), // Valeur lissée initiale pour y
+  lowPassLeftState(0.0f),
+  lowPassRightState(0.0f)
 {
   echo0.setDel(10000);
   echo0.setFeedback(0.5);
@@ -22,14 +24,13 @@ MyDsp::MyDsp() :
 
 MyDsp::~MyDsp(){}
 
-// Mise à jour de la position : x et y sont compris entre 0.0 et 1.0
-// x contrôle le panning, y contrôle l'atténuation (distance)
+// Mise à jour de la position et de la distance
+// x (0.0 à 1.0) contrôle le panning et y (0.0 à 1.0) la distance
 void MyDsp::setPosition(float xValue, float yValue){
   x = constrain(xValue, 0.0, 1.0);
   y = constrain(yValue, 0.0, 1.0);
 }
 
-// Définition de la fréquence de la sinusoïde
 void MyDsp::setFreq(float freq){
   sine.setFrequency(freq);
 }
@@ -37,29 +38,31 @@ void MyDsp::setFreq(float freq){
 void MyDsp::update(void) {
   audio_block_t* outBlock[AUDIO_OUTPUTS];
 
-  // Allocation des blocs audio pour chaque canal
   for (int channel = 0; channel < AUDIO_OUTPUTS; channel++) {
-    outBlock[channel] = allocate(); 
+    outBlock[channel] = allocate();
     if (!outBlock[channel]) {
       return;
     }
   }
   
   // Interpolation smooth pour x et y
-  const float smoothingFactor = 0.01f; // Ajuste cette valeur pour des transitions plus lentes ou plus rapides
+  const float smoothingFactor = 0.01f;
   smoothedX += smoothingFactor * (x - smoothedX);
   smoothedY += smoothingFactor * (y - smoothedY);
   
-  // Calcul du panning à puissance constante pour le canal gauche/droit basé sur smoothedX
-  // smoothedX = 0.0 -> angle = 0      -> gainLeft = cos(0)=1, gainRight = sin(0)=0
-  // smoothedX = 1.0 -> angle = π/2    -> gainLeft = cos(π/2)=0, gainRight = sin(π/2)=1
+  // Panning à puissance constante basé sur smoothedX
   float angle = smoothedX * (PI / 2.0f);
   float gainLeft = cos(angle);
   float gainRight = sin(angle);
   
-  // Utilisation de smoothedY pour moduler l'atténuation globale
-  // Ici, y = 0 signifie aucune atténuation (source proche) et y = 1 signifie volume très atténué (source lointaine)
-  float attenuation = 1.0f - smoothedY;
+  // Atténuation non linéaire pour simuler la distance
+  // Ici, on utilise une loi exponentielle pour une décroissance plus marquée
+  float attenuation = pow(0.5f, smoothedY * 2.0f);  // y=0 -> 1.0, y=1 -> 0.25
+  
+  // Détermination du coefficient du filtre passe-bas
+  // Plus smoothedY est grand, plus le filtre est "lourd" (alpha faible)
+  // Par exemple, pour y proche : alpha ≈ 0.9, pour y lointain : alpha ≈ 0.1
+  float alpha = 0.1f + 0.8f * (1.0f - smoothedY);
   
   for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
     float sineSample = sine.tick();
@@ -67,15 +70,20 @@ void MyDsp::update(void) {
     float echoOut1 = echo1.tick(sineSample);
     float processedSample = (echoOut0 + echoOut1) * 0.5f;
     
+    // Application du panning et de l'atténuation
     float leftSample = processedSample * gainLeft * attenuation;
     float rightSample = processedSample * gainRight * attenuation;
     
-    // Clamp des valeurs pour rester dans [-1, 1]
-    leftSample = max(-1.0f, min(1.0f, leftSample));
-    rightSample = max(-1.0f, min(1.0f, rightSample));
+    // Application d'un filtre passe-bas simple pour simuler la perte de hautes fréquences à distance
+    lowPassLeftState = lowPassLeftState + alpha * (leftSample - lowPassLeftState);
+    lowPassRightState = lowPassRightState + alpha * (rightSample - lowPassRightState);
     
-    outBlock[0]->data[i] = leftSample * MULT_16;
-    outBlock[1]->data[i] = rightSample * MULT_16;
+    // Clamp pour éviter les dépassements
+    float outLeft = max(-1.0f, min(1.0f, lowPassLeftState));
+    float outRight = max(-1.0f, min(1.0f, lowPassRightState));
+    
+    outBlock[0]->data[i] = outLeft * MULT_16;
+    outBlock[1]->data[i] = outRight * MULT_16;
   }
   
   for (int channel = 0; channel < AUDIO_OUTPUTS; channel++) {
