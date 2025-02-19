@@ -19,13 +19,14 @@ class MyDsp : public AudioStream
     
     virtual void update(void);
     void setFreq(float freq);
-    void setPosition(float x, float y); // Ajout de la gestion de la spatialisation
+    void setPosition(float x, float y); // Gestion de la spatialisation
 
   private:
     Sine sine;
     Echo echo0;
     Echo echo1;
-    float x, y; // Coordonnées spatiales du son
+    float x, y;         // Valeur cible pour le panning
+    float smoothedX;    // Valeur interne pour une transition smooth
 };
 
 #endif
