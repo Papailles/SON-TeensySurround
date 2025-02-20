@@ -2,6 +2,8 @@
 #include <Arduino.h>
 #include "hrir_data.h"  // on inclut nos HRIR fictifs
 
+#define AUDIO_OUTPUTS 2
+
 // Constructeur
 MyDsp::MyDsp()
 : AudioStream(1, inputQueueArray),
@@ -34,13 +36,10 @@ void MyDsp::update()
     if(!inBlock) return;
 
     // Allocation des blocs de sortie
-    audio_block_t* outLeft = allocate();
-    audio_block_t* outRight= allocate();
-    if(!outLeft || !outRight){
-        if(outLeft) release(outLeft);
-        if(outRight)release(outRight);
-        release(inBlock);
-        return;
+    audio_block_t* outBlock[AUDIO_OUTPUTS];
+    for(int c=0; c<AUDIO_OUTPUTS; c++){
+      outBlock[c] = allocate();
+      if(!outBlock[c]) return;
     }
 
     // Convertir en float
@@ -60,18 +59,27 @@ void MyDsp::update()
     // Sélection de la HRIR
     auto selHrir = hrtfEngine.getHrir(angle);
 
+    // Générer un bloc mono en float
+    float blockMono[AUDIO_BLOCK_SAMPLES];
+    for(int i=0; i<AUDIO_BLOCK_SAMPLES; i++){
+        float val = 0.5f * sine.tick(); // sinusoïde amplitude 0.5
+        blockMono[i] = val;
+    }
+
     // Appliquer la convolution naive
     float tmpLeft[AUDIO_BLOCK_SAMPLES];
     float tmpRight[AUDIO_BLOCK_SAMPLES];
-    hrtfEngine.processBlock(inFloat, tmpLeft, tmpRight, selHrir);
+    hrtfEngine.processBlock(blockMono, tmpLeft, tmpRight, selHrir);
 
     // Reconversion vers int16_t
-    for(int i=0; i<AUDIO_BLOCK_SAMPLES; i++){
-        outLeft->data[i]  = (int16_t)(tmpLeft[i]*32767.f);
-        outRight->data[i] = (int16_t)(tmpRight[i]*32767.f);
-        /*Serial.print("outLeft = ");
-        Serial.println(outLeft->data[i]);*/
-    }
+  for(int i=0; i<AUDIO_BLOCK_SAMPLES; i++){
+    outBlock[0]->data[i] = (int16_t)(tmpLeft[i]  * 32767.f);
+    outBlock[1]->data[i] = (int16_t)(tmpRight[i] * 32767.f);
+    Serial.print("outblock 0 :");
+    Serial.println(outBlock[0]->data[i]);
+    Serial.print("outblock 1 :");
+    Serial.println(outBlock[1]->data[i]);
+  }
 
     /*float maxLeft = 0.0f;
     for(int i=0; i<AUDIO_BLOCK_SAMPLES; i++){
@@ -81,10 +89,9 @@ void MyDsp::update()
     Serial.print("maxLeft = ");
     Serial.println(maxLeft);*/
 
-    // Transmission
-    transmit(outLeft, 0);
-    transmit(outRight,1);
-    release(outLeft);
-    release(outRight);
-    release(inBlock);
+  // Transmission
+  transmit(outBlock[0], 0);
+  transmit(outBlock[1], 1);
+  release(outBlock[0]);
+  release(outBlock[1]);
 }

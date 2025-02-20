@@ -95,6 +95,7 @@ void ProjectHrtfEngine::processBlock(const float* in, float* outLeft, float* out
 
     if(!selHrir.left || !selHrir.right || selHrir.length == 0) {
         // HRIR invalide
+        Serial.println("KOOOOO");
         return;
     }
 
