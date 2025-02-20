@@ -69,7 +69,17 @@ void MyDsp::update()
     for(int i=0; i<AUDIO_BLOCK_SAMPLES; i++){
         outLeft->data[i]  = (int16_t)(tmpLeft[i]*32767.f);
         outRight->data[i] = (int16_t)(tmpRight[i]*32767.f);
+        /*Serial.print("outLeft = ");
+        Serial.println(outLeft->data[i]);*/
     }
+
+    /*float maxLeft = 0.0f;
+    for(int i=0; i<AUDIO_BLOCK_SAMPLES; i++){
+        float v = fabsf(tmpLeft[i]);
+        if(v > maxLeft) maxLeft = v;
+    }
+    Serial.print("maxLeft = ");
+    Serial.println(maxLeft);*/
 
     // Transmission
     transmit(outLeft, 0);
