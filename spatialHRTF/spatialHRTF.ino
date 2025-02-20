@@ -1,29 +1,27 @@
 #include <Audio.h>
 #include "MyDsp.h"
+#include "ProjectHrtfEngine.h"
 
-// Sortie audio
+AudioControlSGTL5000 audioShield;
 AudioOutputI2S audioOutput;
-AudioInputI2S  audioInput;
-// Notre DSP
 MyDsp myDsp;
 
-// On connecte myDsp -> audioOutput
-AudioConnection      c1(audioInput, 0, myDsp, 0);
-AudioConnection      c2(myDsp, 0, audioOutput, 0);
-AudioConnection      c3(myDsp, 1, audioOutput, 1);
-AudioControlSGTL5000 audioShield;
+// Patch cords
+AudioConnection pcLeft(myDsp, 0, audioOutput, 0);
+AudioConnection pcRight(myDsp,1, audioOutput, 1);
 
 void setup() {
-  AudioMemory(12); 
+  AudioMemory(12);
   audioShield.enable();
-  audioShield.volume(1);
+  audioShield.volume(0.8);
 
-  // Initialiser MyDsp
   myDsp.begin();
+  // On peut régler la fréquence
+  myDsp.setFreq(220.0f);
 }
 
 void loop() {
-  // rien de spécial, l'audio tourne en IRQ 
-  myDsp.setFreq(1000);
-  delay(100);
+  // On pourrait varier la fréquence
+  myDsp.setFreq(random(200,3000));
+  delay(500);
 }
