@@ -99,6 +99,7 @@ void ProjectHrtfEngine::processBlock(const float* in, float* outLeft, float* out
         return;
     }
 
+    // Convolution naïve : chaque échantillon du bloc
     for(int n=0; n<blockSize; n++){
         float x = in[n];
         // y[n] += sum_{k=0..n} in[n-k]*h[k]
@@ -108,6 +109,28 @@ void ProjectHrtfEngine::processBlock(const float* in, float* outLeft, float* out
         }
     }
 
-    // On ignore l'ITD (delayLeft/delayRight) dans cet exemple
-    // Il faudrait un buffer circulaire pour appliquer un décalage
+    // Application des délais ITD
+    int dL = selHrir.delayLeft;   // nombre d'échantillons à retarder pour le canal gauche
+    int dR = selHrir.delayRight;  // pour le canal droit
+
+    // Création de buffers temporaires pour ne pas écraser les données lors du décalage
+    float tempLeft[blockSize], tempRight[blockSize];
+    memcpy(tempLeft, outLeft,  blockSize * sizeof(float));
+    memcpy(tempRight, outRight, blockSize * sizeof(float));
+
+    // Décalage pour le canal gauche
+    for (int i = 0; i < blockSize; i++) {
+        if (i < dL)
+            outLeft[i] = 0.0f; // on met zéro si on n'a pas assez d'échantillons
+        else
+            outLeft[i] = tempLeft[i - dL];
+    }
+
+    // Décalage pour le canal droit
+    for (int i = 0; i < blockSize; i++) {
+        if (i < dR)
+            outRight[i] = 0.0f;
+        else
+            outRight[i] = tempRight[i - dR];
+    }
 }

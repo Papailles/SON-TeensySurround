@@ -22,6 +22,7 @@ void setup() {
 
 void loop() {
   // On pourrait varier la fréquence
-  myDsp.setFreq(random(200,3000));
-  delay(500);
+  //myDsp.setFreq(random(200,3000));
+  myDsp.setFreq(800);
+  delay(1000);
 }

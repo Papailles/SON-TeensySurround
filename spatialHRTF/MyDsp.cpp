@@ -18,6 +18,8 @@ void MyDsp::begin()
 
     hrtfEngine.addHrir(0,   hrirAz0Left,  hrirAz0Right, 2, 5, 128);
     hrtfEngine.addHrir(30,  hrirAz30Left, hrirAz30Right,4, 7, 128);
+    hrtfEngine.addHrir(60,  hrirAz60Left, hrirAz60Right, 6, 9, 128);
+    hrtfEngine.addHrir(90,  hrirAz90Left, hrirAz90Right, 8, 11, 128);
 }
 
 void MyDsp::setFreq(float f)
@@ -47,19 +49,25 @@ void MyDsp::update()
 
     // 2) Sélection de la HRIR
     static int angle = 0;
-    angle++;
-    if(angle>30) angle=0;
+    angle+=0.1;
+    if(angle>90) angle=0;
     auto selHrir = hrtfEngine.getHrir(angle);
 
     // 3) Convolution naive
     float leftFloat[AUDIO_BLOCK_SAMPLES];
     float rightFloat[AUDIO_BLOCK_SAMPLES];
+
+    Serial.println(" ");
     hrtfEngine.processBlock(blockMono, leftFloat, rightFloat, selHrir);
 
     // 4) Conversion en int16 et stockage
     for(int i=0; i<AUDIO_BLOCK_SAMPLES; i++){
         outBlock[0]->data[i] = (int16_t)(leftFloat[i]  * MULT_16);
         outBlock[1]->data[i] = (int16_t)(rightFloat[i] * MULT_16);
+        Serial.print("Oreille gauche : ");
+        Serial.println(outBlock[0]->data[i]);
+        Serial.print("Oreille droite : ");
+        Serial.println(outBlock[1]->data[i]);
     }
 
     // 5) Transmission
