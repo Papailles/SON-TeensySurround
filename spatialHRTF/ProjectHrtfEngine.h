@@ -40,6 +40,9 @@ public:
                  unsigned delayLeft, unsigned delayRight,
                  size_t length);
 
+    // Charger un fichier .bin (avec magic="HRIR", etc.)
+    bool loadFromBin(const String &filename);  // NOUVEAU
+
     // Sélection de la HRIR la plus proche de azimuthDeg
     SelectedHrir getHrir(int azimuthDeg);
 
@@ -49,7 +52,7 @@ public:
 
 private:
     // On stocke quelques HRIR (MAX_HRIR_SLOTS)
-    static const int MAX_HRIR_SLOTS = 8;
+    static const int MAX_HRIR_SLOTS = 2048; // on peut augmenter si gros .bin
     struct HrirSlot {
         int azimuth;
         HrirData data;

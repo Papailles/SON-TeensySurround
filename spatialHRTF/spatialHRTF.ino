@@ -11,13 +11,21 @@ AudioConnection pcLeft(myDsp, 0, audioOutput, 0);
 AudioConnection pcRight(myDsp,1, audioOutput, 1);
 
 void setup() {
+
+  if (!SD.begin(BUILTIN_SDCARD)) {
+    Serial.println("Erreur: impossible d'initialiser la carte SD !");
+    while (1) { /* blocage ou reset */ }
+  }
+  Serial.println("SD initialisee avec succes.");
+  
   AudioMemory(12);
   audioShield.enable();
-  audioShield.volume(0.8);
+  audioShield.volume(0.5);
 
   myDsp.begin();
   // On peut régler la fréquence
   myDsp.setFreq(220.0f);
+  SD.begin(BUILTIN_SDCARD);
 }
 
 void loop() {
