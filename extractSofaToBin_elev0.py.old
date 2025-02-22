@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+import os
+import struct
+import numpy as np
+import pysofaconventions as pysofa
+
+def main():
+    sofa_filename = "hrtf_nh2.sofa"
+    output_bin = "hrtf_elev0.bin"
+    TRIM_LEN = 128
+
+    sofa = pysofa.SOFAFile(sofa_filename, 'r')
+    sampleRate = sofa.getSamplingRate()
+    IR_data = sofa.getDataIR()   # forme (M, 2, N)
+    M, R, N = IR_data.shape
+    source_positions = sofa.getVariableValue("SourcePosition")  # (M,3)
+
+    # Filtrer pour garder seulement les mesures avec élévation proche de 0°
+    elev_tol = 1.0  # tolérance en degrés
+    selected_indices = [m for m in range(M) if abs(source_positions[m, 1]) <= elev_tol]
+    print("Nombre de mesures avec élévation ~0° :", len(selected_indices))
+
+    # Trier par azimut pour une meilleure organisation
+    selected_indices.sort(key=lambda m: source_positions[m, 0])
+
+    with open(output_bin, "wb") as f:
+        # Écrire l'en-tête
+        f.write(b"HRIR")  # 4 octets
+        f.write(struct.pack("<I", int(sampleRate)))  # sampleRate (uint32_t)
+        f.write(struct.pack("<I", TRIM_LEN))           # hrirLen (uint32_t)
+        M_sel = len(selected_indices)
+        f.write(struct.pack("<I", M_sel))              # nombre de mesures (uint32_t)
+
+        for m in selected_indices:
+            az = source_positions[m, 0]
+            el = source_positions[m, 1]
+            dist = source_positions[m, 2]
+            f.write(struct.pack("<fff", az, el, dist))
+            left = IR_data[m, 0, :TRIM_LEN]
+            right = IR_data[m, 1, :TRIM_LEN]
+            left_f32 = np.array(left, dtype=np.float32)
+            right_f32 = np.array(right, dtype=np.float32)
+            f.write(left_f32.tobytes(order='C'))
+            f.write(right_f32.tobytes(order='C'))
+
+    print("Fichier bin généré :", output_bin)
+    print("Format : [ 'HRIR', sampleRate(uint32), hrirLen(uint32), M(uint32), puis pour chaque mesure : (az, el, dist)(3 floats), leftHRIR(TRIM_LEN floats), rightHRIR(TRIM_LEN floats) ]")
+
+if __name__=="__main__":
+    main()

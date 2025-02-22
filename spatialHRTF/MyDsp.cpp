@@ -28,7 +28,8 @@ void MyDsp::begin()
     // ex: hrtfEngine.loadFromBin("/hrtf_nh2.bin");
     // si le fichier est sur la SD
 
-    if(!hrtfEngine.loadFromBin("/hrtf_nh2.bin")) {
+    //if(!hrtfEngine.loadFromBin("/hrtf_nh2.bin")) {
+    if(!hrtfEngine.loadFromBin("/hrtf_elev0.bin")) {
         Serial.println("Echec du loadFromBin => fallback manuel?");
         // fallback: on peut faire addHrir(...) manuellement si on veut
         // ...

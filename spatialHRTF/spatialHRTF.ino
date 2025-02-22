@@ -25,7 +25,6 @@ void setup() {
   myDsp.begin();
   // On peut régler la fréquence
   myDsp.setFreq(220.0f);
-  SD.begin(BUILTIN_SDCARD);
 }
 
 void loop() {
