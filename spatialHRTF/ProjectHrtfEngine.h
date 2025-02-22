@@ -52,7 +52,7 @@ public:
 
 private:
     // On stocke quelques HRIR (MAX_HRIR_SLOTS)
-    static const int MAX_HRIR_SLOTS = 2048; // on peut augmenter si gros .bin
+    static const int MAX_HRIR_SLOTS = 128; // on peut augmenter si gros .bin
     struct HrirSlot {
         int azimuth;
         HrirData data;

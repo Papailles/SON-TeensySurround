@@ -12,7 +12,7 @@ AudioConnection pcRight(myDsp,1, audioOutput, 1);
 
 void setup() {
 
-  if (!SD.begin(BUILTIN_SDCARD)) {
+  if (!SD.begin()) {
     Serial.println("Erreur: impossible d'initialiser la carte SD !");
     while (1) { /* blocage ou reset */ }
   }

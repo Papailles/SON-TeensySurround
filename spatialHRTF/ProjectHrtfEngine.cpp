@@ -1,6 +1,8 @@
 #include "ProjectHrtfEngine.h"
 #include <string.h> // pour memset etc.
 #include <math.h>   // pour abs()
+#include <SD.h>    // pour File
+#include <SPI.h>   // si nécessaire pour SD
 
 ProjectHrtfEngine::ProjectHrtfEngine()
 : hrirCount(0),
@@ -67,7 +69,7 @@ void ProjectHrtfEngine::addHrir(int azimuthDeg,
 bool ProjectHrtfEngine::loadFromBin(const String &filename)
 {
     // Ouvrir le fichier sur la SD (ex: "hrtf_nh2.bin")
-    File f = SD.open(filename, FILE_READ);
+    File f = SD.open(filename.c_str(), FILE_READ);
     if(!f) {
         Serial.print("Impossible d'ouvrir le fichier ");
         Serial.println(filename);
@@ -221,7 +223,6 @@ void ProjectHrtfEngine::processBlock(const float* in, float* outLeft, float* out
 
     if(!selHrir.left || !selHrir.right || selHrir.length == 0) {
         // HRIR invalide
-        Serial.println("KOOOOO");
         return;
     }
 

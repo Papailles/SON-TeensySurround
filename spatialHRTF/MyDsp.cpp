@@ -1,7 +1,6 @@
 #include "MyDsp.h"
 #include <Arduino.h>
 #include <Audio.h>
-#include "hrir_data.h" // HRIR
 #define AUDIO_OUTPUTS 2
 #define MULT_16 32767
 
