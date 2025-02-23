@@ -91,7 +91,8 @@ bool ProjectHrtfEngine::loadFromBin(const String &filename) {
     for (uint32_t m = 0; m < M; m++) {
         if (hrirCount >= MAX_HRIR_SLOTS) break;
 
-        // Lecture des angles et distances (on n'utilise ici que l'azimuth)
+        // Lecture des angles et distances (on n'utilise ici que l'azimuth pour la sélection,
+        // mais on stocke la distance pour l'atténuation)
         float az = 0.0f, el = 0.0f, dist = 0.0f;
         auto readFloat = [&]() -> float {
             byte tmp[4];
@@ -126,7 +127,7 @@ bool ProjectHrtfEngine::loadFromBin(const String &filename) {
             }
         }
 
-        // Normalisation : calculer la valeur maximale absolue et diviser chaque échantillon par ce maximum
+        //Normalisation : calculer la valeur maximale absolue et diviser chaque échantillon par ce maximum
         float maxVal = 0.0f;
         for (int i = 0; i < maxLen; i++) {
             float absLeft = fabs(leftBuf[i]);
@@ -141,9 +142,11 @@ bool ProjectHrtfEngine::loadFromBin(const String &filename) {
                 rightBuf[i] *= normFactor;
             }
         }
+        
 
         // Stocker le HRIR normalisé dans le tableau des HRIR
         hrirSlots[hrirCount].azimuth = (int)roundf(az);
+        hrirSlots[hrirCount].distance = dist;  // Stocker la distance lue
         hrirSlots[hrirCount].data.delayLeft  = 0;
         hrirSlots[hrirCount].data.delayRight = 0;
         hrirSlots[hrirCount].data.length     = maxLen;
@@ -167,19 +170,19 @@ bool ProjectHrtfEngine::loadFromBin(const String &filename) {
 SelectedHrir ProjectHrtfEngine::getHrir(int azimuthDeg) {
     SelectedHrir sel;
     sel.left = nullptr;
-    sel.right = nullptr;
+    sel.right= nullptr;
     sel.delayLeft = 0;
     sel.delayRight = 0;
     sel.length = 0;
+    sel.distance = 0.0f;  // si besoin d'utiliser la distance ailleurs
 
     if (hrirCount == 0) {
         return sel;
     }
 
-    // Recherche du HRIR dont l'azimuth est le plus proche,
-    // en prenant en compte la circularité (différence minimale modulo 360)
+    // Recherche du HRIR dont l'azimuth est le plus proche, en tenant compte de la circularité
     int bestIndex = 0;
-    int bestDiff = 360; // différence maximale possible
+    int bestDiff = 360;
     for (int i = 0; i < hrirCount; i++) {
         int diff = abs(azimuthDeg - hrirSlots[i].azimuth);
         if (diff > 180) {
@@ -190,85 +193,96 @@ SelectedHrir ProjectHrtfEngine::getHrir(int azimuthDeg) {
             bestIndex = i;
         }
     }
+    
+    // Récupérer les données du HRIR sélectionné
     sel.left  = hrirSlots[bestIndex].data.left;
     sel.right = hrirSlots[bestIndex].data.right;
-    sel.delayLeft  = hrirSlots[bestIndex].data.delayLeft;
-    sel.delayRight = hrirSlots[bestIndex].data.delayRight;
-    sel.length     = hrirSlots[bestIndex].data.length;
+    sel.length = hrirSlots[bestIndex].data.length;
+    sel.distance = hrirSlots[bestIndex].distance; // si vous utilisez la distance plus tard
+
+    // Si les délais stockés sont zéro, on calcule l'ITD approximatif basé sur l'azimut
+    if (hrirSlots[bestIndex].data.delayLeft == 0 && hrirSlots[bestIndex].data.delayRight == 0) {
+        // Convertir l'azimut en angle entre -180 et 180
+        float effectiveAz = (azimuthDeg > 180) ? azimuthDeg - 360 : (float)azimuthDeg;
+        float rad = effectiveAz * 3.14159265f / 180.0f;
+        
+        // Paramètres hypothétiques : rayon de la tête et vitesse du son
+        float headRadius = 0.15f;      // en mètres (15 cm)
+        float speedOfSound = 343.0f;       // en m/s
+        // Calcul de l'ITD (en secondes) : ITD = (headRadius / speedOfSound) * sin(angle)
+        float itd = headRadius / speedOfSound * sin(rad);
+        // Convertir l'ITD en nombre d'échantillons
+        unsigned delaySamples = (unsigned)round(fabs(itd) * sampleRate);
+        
+        // Appliquer le délai : si l'ITD est négatif, on retarde le canal gauche, sinon le canal droit
+        if (itd < 0) {
+            sel.delayLeft = delaySamples;
+            sel.delayRight = 0;
+        } else {
+            sel.delayLeft = 0;
+            sel.delayRight = delaySamples;
+        }
+    } else {
+        sel.delayLeft  = hrirSlots[bestIndex].data.delayLeft;
+        sel.delayRight = hrirSlots[bestIndex].data.delayRight;
+    }
+    
     return sel;
 }
 
 void ProjectHrtfEngine::processBlock(const float* in, float* outLeft, float* outRight,
                                      const SelectedHrir& selHrir, float gain) {
-    // Longueur de l'impulsion HRIR
-    int L = selHrir.length;
-    // Taille du bloc étendu = blockSize + L - 1
-    int extendedSize = blockSize + L - 1;
-    // On suppose ici extendedSize <= 255 (avec blockSize = 128 et MAX_HRIR_LENGTH = 128)
-    float tempLeft[255];
-    float tempRight[255];
-    memset(tempLeft, 0, extendedSize * sizeof(float));
-    memset(tempRight, 0, extendedSize * sizeof(float));
-
-    // Copier l'overlap de l'appel précédent dans le début du buffer temporaire
+    // Longueur de la HRIR (nombre de taps)
+    const int L = selHrir.length;
+    // Taille étendue du buffer = blockSize + L - 1
+    const int extSize = blockSize + L - 1;
+    
+    // Créer des buffers temporaires pour la convolution
+    float tempL[extSize];
+    float tempR[extSize];
+    for (int i = 0; i < extSize; i++) {
+         tempL[i] = 0.0f;
+         tempR[i] = 0.0f;
+    }
+    
+    // Ajouter l'overlap provenant du bloc précédent
     for (int i = 0; i < overlapSize; i++) {
-         tempLeft[i] += overlapLeft[i];
-         tempRight[i] += overlapRight[i];
+         tempL[i] += overlapLeft[i];
+         tempR[i] += overlapRight[i];
     }
-
-    // Calculer le niveau moyen (moyenne absolue) du bloc d'entrée
-    float avgIn = 0.0f;
+    
+    // Convolution naïve sur le bloc courant
     for (int n = 0; n < blockSize; n++) {
-         avgIn += fabs(in[n]);
-    }
-    avgIn /= blockSize;
-
-    // Gestion conditionnelle de l'overlap en fonction du niveau d'entrée
-    const float silenceThreshold = 0.005f;  // Seuil à ajuster selon vos tests
-    const float fadeFactor = 0.5f;          // Facteur de décroissance si le signal n'est pas complètement silencieux
-
-    if (avgIn < silenceThreshold) {
-         // En cas de silence, on réinitialise complètement l'overlap
-         for (int i = 0; i < overlapSize; i++) {
-             overlapLeft[i] = 0.0f;
-             overlapRight[i] = 0.0f;
-         }
-    } else {
-         // Sinon, on applique un fade-out sur l'overlap pour réduire progressivement l'énergie résiduelle
-         for (int i = 0; i < overlapSize; i++) {
-              overlapLeft[i] *= fadeFactor;
-              overlapRight[i] *= fadeFactor;
-         }
-    }
-
-    // Copier l'overlap (après gestion) dans tempLeft et tempRight
-    // (Si la gestion précédente a modifié overlap, les valeurs copiées seront celles atténuées ou réinitialisées)
-    for (int i = 0; i < overlapSize; i++) {
-         tempLeft[i] = overlapLeft[i];
-         tempRight[i] = overlapRight[i];
-    }
-
-    // Convolution sur le bloc courant
-    for (int n = 0; n < blockSize; n++) {
+         float sample = in[n];
          for (int k = 0; k < L; k++) {
-             tempLeft[n + k] += in[n] * selHrir.left[k];
-             tempRight[n + k] += in[n] * selHrir.right[k];
+              // On ajoute contribution de in[n] * hrir[k] à la position n+k
+              tempL[n + k] += sample * selHrir.left[k];
+              tempR[n + k] += sample * selHrir.right[k];
          }
     }
-
-    // Appliquer le gain et copier les blockSize premiers échantillons dans la sortie
-    for (int n = 0; n < blockSize; n++) {
-         outLeft[n]  = tempLeft[n] * gain;
-         outRight[n] = tempRight[n] * gain;
+    
+    // Calcul du facteur d'atténuation basé sur la distance (loi inverse du carré)
+    // Si la distance est inférieure ou égale à 1, on ne modifie pas.
+    float distanceFactor = 1.0f;
+    if (selHrir.distance > 1.0f) {
+         distanceFactor = 1.0f / (selHrir.distance * selHrir.distance);
     }
-
-    // Mise à jour de l'overlap : la partie excédentaire (la "queue" de la convolution)
-    int newOverlapSize = L - 1;
+    
+    // Appliquer le gain global et le facteur de distance, et copier les blockSize premiers échantillons
+    for (int n = 0; n < blockSize; n++) {
+         outLeft[n]  = tempL[n] * gain * distanceFactor;
+         outRight[n] = tempR[n] * gain * distanceFactor;
+    }
+    
+    // Mise à jour de l'overlap-add : conserver la "queue" (L-1 échantillons) pour le prochain bloc
+    const int newOverlapSize = L - 1;
     for (int n = 0; n < newOverlapSize; n++) {
-         overlapLeft[n]  = tempLeft[blockSize + n];
-         overlapRight[n] = tempRight[blockSize + n];
+         overlapLeft[n]  = tempL[blockSize + n];
+         overlapRight[n] = tempR[blockSize + n];
     }
     overlapSize = newOverlapSize;
 }
+
+
 
 

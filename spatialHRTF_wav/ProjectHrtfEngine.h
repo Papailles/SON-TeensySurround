@@ -4,11 +4,12 @@
 #include <Arduino.h>
 #include <stddef.h>
 
+// Longueur maximale d'une HRIR
 static const int MAX_HRIR_LENGTH = 128;
 
 struct HrirData {
-    unsigned delayLeft;
-    unsigned delayRight;
+    unsigned delayLeft;   // en échantillons
+    unsigned delayRight;  // en échantillons
     float left[MAX_HRIR_LENGTH];
     float right[MAX_HRIR_LENGTH];
     size_t length;
@@ -20,12 +21,14 @@ struct SelectedHrir {
     unsigned delayLeft;
     unsigned delayRight;
     size_t length;
+    float distance;  // Nouvelle donnée : distance en mètres (par exemple)
 };
 
 class ProjectHrtfEngine {
 public:
     ProjectHrtfEngine();
 
+    // Initialisation : sampleRate, blockSize (ex : 44100, 128)
     void init(int sRate, int bSize);
     void addHrir(int azimuthDeg,
                  const float* left, const float* right,
@@ -34,8 +37,7 @@ public:
     bool loadFromBin(const String &filename);
     SelectedHrir getHrir(int azimuthDeg);
 
-    // Nouvelle version avec overlap-add
-    // Le facteur de gain est ajouté (par défaut 1.0, à ajuster selon vos mesures)
+    // Convolution naïve avec overlap-add et gain
     void processBlock(const float* in, float* outLeft, float* outRight,
                       const SelectedHrir& selHrir, float gain = 1.0f);
 
@@ -46,6 +48,7 @@ private:
     static const int MAX_HRIR_SLOTS = 128;
     struct HrirSlot {
         int azimuth;
+        float distance; // Nouvelle donnée pour stocker la distance
         HrirData data;
     };
 
@@ -54,10 +57,10 @@ private:
     int sampleRate;
     int blockSize;
 
-    // Buffers pour overlap-add (la taille maximale est MAX_HRIR_LENGTH-1)
+    // Buffers pour overlap-add
     float overlapLeft[MAX_HRIR_LENGTH];
     float overlapRight[MAX_HRIR_LENGTH];
-    int overlapSize;  // nombre de samples actuellement stockés (varie en fonction du HRIR)
+    int overlapSize;
 };
 
 #endif

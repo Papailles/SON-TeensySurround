@@ -40,15 +40,6 @@ void MyDsp::update() {
         return;
     }
 
-    /* DEBUG : Afficher quelques échantillons bruts du inBlock pour vérifier les données reçues
-    Serial.print("Raw inBlock samples: ");
-    for (int i = 0; i < 10; i++) {
-        Serial.print(inBlock->data[i]);
-        Serial.print(" ");
-    }
-    Serial.println();
-    */
-
     // Allouer les blocs de sortie pour chaque canal stéréo
     audio_block_t* outBlock[AUDIO_OUTPUTS];
     for (int c = 0; c < AUDIO_OUTPUTS; c++) {
@@ -58,14 +49,12 @@ void MyDsp::update() {
             return;
         }
     }
-
-    // Conversion stéréo -> mono : on mixe les deux canaux en moyennant
+    
+    // Conversion : le signal d'entrée est déjà mono via le mixeur, on le convertit en float
     float inMono[AUDIO_BLOCK_SAMPLES];
     float maxIn = 0.0f;
     for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
-        float left  = inBlock->data[i * 2]     / 32768.0f;
-        float right = inBlock->data[i * 2 + 1] / 32768.0f;
-        inMono[i] = (left + right) * 0.5f;
+        inMono[i] = (inBlock->data[i] / 32768.0f);
         if (fabs(inMono[i]) > maxIn) {
             maxIn = fabs(inMono[i]);
         }
@@ -89,7 +78,7 @@ void MyDsp::update() {
     // Choisir un gain (à ajuster selon vos mesures)
     float gain = 1.0f;
 
-    // Appel de la convolution avec overlap-add
+    //Appel de la convolution avec overlap-add
     hrtfEngine.processBlock(inMono, outFloatLeft, outFloatRight, sel, gain);
 
     // Calculer le niveau maximum des sorties
@@ -113,9 +102,10 @@ void MyDsp::update() {
     release(outBlock[1]);
 
     // Exemple de mise à jour automatique de l'angle (à désactiver si contrôle externe)
-    setAngle(currentAngle + 1);
+    //setAngle(currentAngle + 1);
+    setAngle(80);
 
-    // Impressions de débogage toutes les secondes
+    //Impressions de débogage toutes les secondes
     static unsigned long lastPrint = 0;
     if (millis() - lastPrint > 1000) {
         lastPrint = millis();
