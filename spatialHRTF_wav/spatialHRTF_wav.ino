@@ -4,15 +4,6 @@
 #include <SPI.h>
 #include <SD.h>
 
-/*AudioPlaySdWav playWav1;         // Lecteur de fichiers WAV sur SD
-AudioOutputI2S audioOutput;       // Sortie audio I2S (utilisée avec l'Audio Shield)
-MyDsp myDsp;                     // Notre classe de traitement HRTF
-AudioConnection patchCord1(playWav1, 0, myDsp, 0);  // Connecte la sortie du WAV à l'entrée de MyDsp
-AudioConnection patchCord2(myDsp, 0, audioOutput, 0); // Sortie gauche de MyDsp
-AudioConnection patchCord3(myDsp, 1, audioOutput, 1); // Sortie droite de MyDsp
-AudioControlSGTL5000 audioShield;
-*/
-
 // Déclaration des objets audio
 AudioPlaySdWav playWav1;         // Lecteur de fichiers WAV sur SD
 AudioMixer4 mixer;               // Mixeur pour combiner les deux canaux en mono

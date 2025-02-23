@@ -76,7 +76,7 @@ void MyDsp::update() {
     }
 
     // Choisir un gain (à ajuster selon vos mesures)
-    float gain = 1.0f;
+    float gain = 0.5f;
 
     //Appel de la convolution avec overlap-add
     hrtfEngine.processBlock(inMono, outFloatLeft, outFloatRight, sel, gain);
@@ -103,7 +103,12 @@ void MyDsp::update() {
 
     // Exemple de mise à jour automatique de l'angle (à désactiver si contrôle externe)
     //setAngle(currentAngle + 1);
-    setAngle(80);
+    static unsigned long lastAngleUpdate = 0;
+    const unsigned long angleUpdateInterval = 50; // ms entre chaque incrément
+    if (millis() - lastAngleUpdate > angleUpdateInterval) {
+        setAngle(currentAngle + 1);
+        lastAngleUpdate = millis();
+    }
 
     //Impressions de débogage toutes les secondes
     static unsigned long lastPrint = 0;
