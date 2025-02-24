@@ -26,16 +26,41 @@ AudioConnection patchCord3(mixer, 0, myDsp, 0);
 AudioConnection patchCord4(myDsp, 0, audioOutput, 0); // sortie gauche
 AudioConnection patchCord5(myDsp, 1, audioOutput, 1); // sortie droite
 
+// Fonction récursive pour lister les fichiers et dossiers
+void listFiles(File dir, int numTabs) {
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) {
+      // Plus de fichiers dans ce dossier
+      break;
+    }
+    // Affichage de l'indentation
+    for (int i = 0; i < numTabs; i++) {
+      Serial.print("\t");
+    }
+    Serial.print(entry.name());
+    if (entry.isDirectory()) {
+      Serial.println("/");
+      // Appel récursif pour le contenu du dossier
+      listFiles(entry, numTabs + 1);
+    } else {
+      // Affichage de la taille du fichier
+      Serial.print("\t\t");
+      Serial.println(entry.size(), DEC);
+    }
+    entry.close();
+  }
+}
 
 void setup() {
   Serial.begin(115200);
   while (!Serial) { } // Attendre l'ouverture du moniteur série
 
-  AudioMemory(12);
+  AudioMemory(16);
 
   // Initialisation du shield audio
   audioShield.enable();
-  audioShield.volume(0.3);
+  audioShield.volume(0.2);
 
   // Afficher le taux d'échantillonnage (optionnel)
   Serial.print("Configuration audio - Sample Rate: ");
@@ -51,6 +76,11 @@ void setup() {
   }
   Serial.println("Carte SD initialisée avec succès.");
 
+  // Lister tous les fichiers à partir de la racine
+  File root = SD.open("/");
+  listFiles(root, 0);
+  root.close();
+
   // Réglage des gains du mixeur pour faire la moyenne
   mixer.gain(0, 0.5);
   mixer.gain(1, 0.5);
@@ -60,7 +90,8 @@ void setup() {
 
   // Démarrer la lecture du fichier WAV "music.wav"
   // Vérifiez que le fichier "music.wav" est à la racine de la carte SD
-  if (!playWav1.play("music.wav")) {
+  //if (!playWav1.play("music.wav")) {
+  if (!playWav1.play("despacito.wav")) {
     Serial.println("Erreur: impossible de lire le fichier music.wav !");
   } else {
     Serial.println("Lecture du fichier music.wav en cours...");
