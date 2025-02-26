@@ -10,7 +10,7 @@
 String wavFiles[MAX_FILES];
 int fileCount = 0;
 int currentFileIndex = 0;
-bool paused = false;  // Indique si la lecture est en pause
+bool paused = false;  // Indique si la lecture est "en pause" (simulation par mise en sourdine)
 
 // Déclaration des objets audio
 AudioPlaySdWav playWav1;         // Lecteur de fichiers WAV sur SD
@@ -30,7 +30,9 @@ AudioConnection patchCord5(myDsp, 1, audioOutput, 1);
 volatile bool manualMode = false;     // false = mode auto, true = mode manuel
 String serialCommand = "";
 
-// Fonction qui charge dans wavFiles[] tous les fichiers .wav trouvés dans la racine
+// --- Fonctions utilitaires ---
+
+// Parcourt la racine de la carte SD et stocke tous les fichiers .wav dans wavFiles[]
 void loadWavFileList() {
   fileCount = 0;
   File root = SD.open("/");
@@ -51,7 +53,7 @@ void loadWavFileList() {
   root.close();
 }
 
-// Fonction récursive pour lister les fichiers (pour affichage sur le moniteur série)
+// Affiche la liste des fichiers sur le moniteur série
 void listFiles(File dir, int numTabs) {
   while (true) {
     File entry = dir.openNextFile();
@@ -71,7 +73,7 @@ void listFiles(File dir, int numTabs) {
   }
 }
 
-// Fonction pour traiter les commandes série reçues
+// --- Traitement des commandes série ---
 void processSerialCommand(String cmd) {
   cmd.trim();
   if (cmd.length() == 0) return;
@@ -134,7 +136,7 @@ void processSerialCommand(String cmd) {
   }
   else if (cmd.equalsIgnoreCase("PAUSE")) {
     if (!paused && playWav1.isPlaying()) {
-      playWav1.stop();
+      audioShield.volume(0.0);  // Mise en sourdine
       paused = true;
       Serial.print("TRACK:");
       Serial.print(wavFiles[currentFileIndex]);
@@ -143,14 +145,10 @@ void processSerialCommand(String cmd) {
   }
   else if (cmd.equalsIgnoreCase("PLAY")) {
     if (paused) {
-      if (!playWav1.play(wavFiles[currentFileIndex].c_str())) {
-        Serial.print("Erreur: impossible de relancer la lecture du fichier ");
-        Serial.println(wavFiles[currentFileIndex]);
-      } else {
-        paused = false;
-        Serial.print("TRACK:");
-        Serial.println(wavFiles[currentFileIndex]);
-      }
+      audioShield.volume(0.4);  // Restaurer le volume (valeur ajustable)
+      paused = false;
+      Serial.print("TRACK:");
+      Serial.println(wavFiles[currentFileIndex]);
     }
   }
   else if (cmd.startsWith("VOLUME:")) {
@@ -163,7 +161,30 @@ void processSerialCommand(String cmd) {
     audioShield.volume(vol);
     Serial.print("VOLUME:");
     Serial.println(volPercent);
-}
+  }
+  else if (cmd.equalsIgnoreCase("GET_FILELIST")) {
+    // Envoyer la liste des fichiers WAV
+    for (int i = 0; i < fileCount; i++) {
+        String entry = "FILE:" + String(i) + "|" + wavFiles[i];
+        Serial.println(entry);
+    }
+    Serial.println("FILELIST_END");
+  }
+  else if (cmd.startsWith("PLAY_INDEX:")) {
+    String idxStr = cmd.substring(11); // "PLAY_INDEX:" a 11 caractères
+    int idx = idxStr.toInt();
+    if (idx >= 0 && idx < fileCount) {
+        currentFileIndex = idx;
+        if (!playWav1.play(wavFiles[currentFileIndex].c_str())) {
+            Serial.print("Erreur: impossible de lire le fichier ");
+            Serial.println(wavFiles[currentFileIndex]);
+        } else {
+            Serial.print("TRACK:");
+            Serial.println(wavFiles[currentFileIndex]);
+            paused = false;
+        }
+    }
+  }
   else {
     Serial.print("Commande inconnue: ");
     Serial.println(cmd);
@@ -175,7 +196,6 @@ void setup() {
   while (!Serial) { } // Attendre l'ouverture du port série
 
   Serial.println("Attente de la connexion de l'interface...");
-  // Attente active jusqu'à réception de "CONNECT" depuis l'interface
   bool interfaceConnected = false;
   while (!interfaceConnected) {
     if (Serial.available() > 0) {
@@ -192,16 +212,13 @@ void setup() {
     delay(100);
   }
 
-  // Initialisation de la chaîne audio
   AudioMemory(16);
 
-  // Initialisation du shield audio
   audioShield.enable();
   audioShield.volume(0.4);
   Serial.print("Configuration audio - Sample Rate: ");
   Serial.println(AUDIO_SAMPLE_RATE_EXACT);
 
-  // Initialisation de la carte SD
   if (!SD.begin()) {
     Serial.println("Erreur: impossible d'initialiser la carte SD !");
     while (1) {
@@ -211,12 +228,10 @@ void setup() {
   }
   Serial.println("Carte SD initialisée avec succès.");
 
-  // Affichage de la liste des fichiers sur le moniteur série
   File root = SD.open("/");
   listFiles(root, 0);
   root.close();
 
-  // Charger la liste des fichiers WAV
   loadWavFileList();
   Serial.print("Nombre de fichiers WAV trouvés: ");
   Serial.println(fileCount);
@@ -226,11 +241,9 @@ void setup() {
     Serial.println(wavFiles[i]);
   }
 
-  // Réglage des gains du mixeur
   mixer.gain(0, 0.5);
   mixer.gain(1, 0.5);
 
-  // Initialisation du DSP HRTF
   myDsp.begin();
 
   // Démarrer la lecture du premier fichier WAV s'il y en a
@@ -247,7 +260,7 @@ void setup() {
   } else {
     Serial.println("Aucun fichier WAV trouvé.");
   }
-  delay(25);  // Pause brève pour l'en-tête WAV
+  delay(25);
 }
 
 void loop() {
@@ -266,7 +279,7 @@ void loop() {
     }
   }
 
-  // Vérifier l'état de la lecture toutes les secondes (si non en pause)
+  // Vérifier l'état de la lecture toutes les secondes
   if (currentTime - lastStatusTime >= 1000) {
     if (!paused && !playWav1.isPlaying()) {
       Serial.println("Lecture terminée ou en pause. Passage au fichier suivant...");
