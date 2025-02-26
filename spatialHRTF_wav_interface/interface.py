@@ -55,7 +55,7 @@ class AngleWidget(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Spatial HRTF Control")
+        self.setWindowTitle("Teensy Surround")
         self.interfaceConnected = False
         self.autoMode = True
         self.musicPaused = False
@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
 
         # Colonne centrale : Contrôles principaux
         center_layout = QVBoxLayout()
-        self.connect_button = QPushButton("Connect", self)
+        self.connect_button = QPushButton("Connexion au Teensy", self)
         self.connect_button.clicked.connect(self.connectDevice)
         center_layout.addWidget(self.connect_button)
 
@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
         angle_container_layout.addStretch()  # espace flexible en bas
         center_layout.addLayout(angle_container_layout)
 
-        self.selected_angle_label = QLabel("Selected Angle: 0°", self)
+        self.selected_angle_label = QLabel("Angle sélectionné: 0°", self)
         center_layout.addWidget(self.selected_angle_label)
 
         self.slider = QSlider(Qt.Horizontal, self)
@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
         self.slider.valueChanged.connect(self.angleChanged)
         center_layout.addWidget(self.slider)
 
-        self.current_track_label = QLabel("Track: None", self)
+        self.current_track_label = QLabel("Fichier en cours de lecture : Aucun", self)
         center_layout.addWidget(self.current_track_label)
 
         self.progress_bar = QProgressBar(self)
@@ -135,14 +135,14 @@ class MainWindow(QMainWindow):
         center_layout.addWidget(self.progress_bar)
 
         music_layout = QHBoxLayout()
-        self.prev_button = QPushButton("Previous", self)
+        self.prev_button = QPushButton("Précédent", self)
         self.prev_button.clicked.connect(self.prevTrack)
         music_layout.addWidget(self.prev_button)
         self.pause_button = QPushButton("Pause", self)
         self.pause_button.setCheckable(True)
         self.pause_button.clicked.connect(self.pauseTrack)
         music_layout.addWidget(self.pause_button)
-        self.next_button = QPushButton("Next", self)
+        self.next_button = QPushButton("Suivant", self)
         self.next_button.clicked.connect(self.nextTrack)
         music_layout.addWidget(self.next_button)
         center_layout.addLayout(music_layout)
@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
             self.autoMode = True
 
     def angleChanged(self, value):
-        self.selected_angle_label.setText("Selected Angle: {}°".format(value))
+        self.selected_angle_label.setText("Angle sélectionné: {}°".format(value))
         self.sendCommand("SET_ANGLE:{}".format(value))
         self.sendCommand("GET_ANGLE")
 
@@ -243,10 +243,10 @@ class MainWindow(QMainWindow):
                     print("Invalid angle value:", angle_value)
             elif line.startswith("SET_ANGLE:"):
                 angle_value = line.split(":", 1)[1]
-                self.selected_angle_label.setText("Selected Angle: {}°".format(angle_value))
+                self.selected_angle_label.setText("Angle sélectionné: {}°".format(angle_value))
             elif line.startswith("TRACK:"):
                 track_title = line.split(":", 1)[1]
-                self.current_track_label.setText("Track: {}".format(track_title))
+                self.current_track_label.setText("Fichier en cours de lecture : {}".format(track_title))
                 # Mise à jour de la sélection dans la liste de fichiers
                 for i in range(self.file_list_widget.count()):
                     item = self.file_list_widget.item(i)
