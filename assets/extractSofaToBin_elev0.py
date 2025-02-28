@@ -60,7 +60,7 @@ def main():
             f.write(np.array(left_trimmed, dtype=np.float32).tobytes())
             f.write(np.array(right_trimmed, dtype=np.float32).tobytes())
 
-    print(f"✅ Fichier '{output_bin}' généré à {TARGET_SAMPLE_RATE} Hz !")
+    print(f"Fichier '{output_bin}' généré à {TARGET_SAMPLE_RATE} Hz !")
 
 if __name__ == "__main__":
     main()

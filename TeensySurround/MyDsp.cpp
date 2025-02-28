@@ -16,7 +16,7 @@ void MyDsp::begin() {
     
     // Charger le fichier binaire contenant les HRIR depuis la carte SD
     if (!hrtfEngine.loadFromBin("/hrtf_elev0.bin")) {
-        Serial.println("Echec du loadFromBin => fallback manuel");
+        Serial.println("Echec du loadFromBin");
     } else {
         Serial.println("OK => HRIR chargé depuis bin!");
     }
@@ -77,7 +77,7 @@ void MyDsp::update() {
         hrirL1 += absVal;
     }
 
-    // Choisir un gain (à ajuster selon vos mesures)
+    // Choisir un gain
     float gain = 0.5f;
 
     //Appel de la convolution avec overlap-add
