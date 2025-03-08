@@ -1,6 +1,6 @@
 # TeensySurround
 
-This project wwas made in the "SON" course offered at INSA Lyon to third year telecommunication students (3TC). The aim of this course is to help students get started to work on a project around embedded real-time audio signal processing.
+This project was made in the "SON" course offered at INSA Lyon to third year telecommunication students (3TC). The aim of this course is to help students get started to work on a project around embedded real-time audio signal processing.
 
 ## 1. Introduction
 
