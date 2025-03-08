@@ -1,47 +1,56 @@
 #!/usr/bin/env python3
 import struct
 
-# 🔧 Nom du fichier à analyser (modifiez ici si nécessaire)
-FILENAME = "hrtf_elev0.bin"
-OUTPUT_FILE = "results.txt"
+FILENAME = "assets/hrtf_elev0.bin"
+OUTPUT_FILE = "assets/results.txt"
 
 def analyze_bin_file(filename, output_file):
+    """
+    Reads and analyzes a binary HRIR file, extracting and saving relevant information.
+
+    Parameters:
+        filename (str): The path to the binary file to be analyzed.
+        output_file (str): The path to the output text file where results will be stored.
+    """
     try:
         with open(filename, "rb") as f, open(output_file, "w") as out:
-            # Lire l'en-tête
-            magic = f.read(4)
+            # Read the file header
+            magic = f.read(4)  # First 4 bytes should contain the magic identifier
             if magic != b"HRIR":
-                out.write(f"Fichier invalide (magic non reconnu): {magic}\n")
+                out.write(f"Invalid file (unrecognized magic): {magic}\n")
                 return
             
-            sampleRate = struct.unpack("<I", f.read(4))[0]
-            hrirLen = struct.unpack("<I", f.read(4))[0]
-            M = struct.unpack("<I", f.read(4))[0]
+            # Read metadata values
+            sampleRate = struct.unpack("<I", f.read(4))[0]  # Sampling rate (Hz)
+            hrirLen = struct.unpack("<I", f.read(4))[0]  # Length of HRIR (samples)
+            M = struct.unpack("<I", f.read(4))[0]  # Number of measurements
 
-            out.write(f"Taux d'echantillonnage : {sampleRate} Hz\n")
-            out.write(f"Longueur HRIR         : {hrirLen} echantillons\n")
-            out.write(f"Nombre de mesures     : {M}\n\n")
-            out.write("=== Contenu des HRIR ===\n\n")
+            # Write metadata to output file
+            out.write(f"Sampling Rate        : {sampleRate} Hz\n")
+            out.write(f"HRIR Length         : {hrirLen} samples\n")
+            out.write(f"Number of Measures  : {M}\n\n")
+            out.write("=== HRIR Content ===\n\n")
 
-            # Lire et enregistrer les données HRIR
+            # Read and save HRIR data for each measurement
             for m in range(M):
-                az, el, dist = struct.unpack("<fff", f.read(12))
-                left_hrir = struct.unpack(f"<{hrirLen}f", f.read(4 * hrirLen))
-                right_hrir = struct.unpack(f"<{hrirLen}f", f.read(4 * hrirLen))
+                az, el, dist = struct.unpack("<fff", f.read(12))  # Read azimuth, elevation, and distance
+                left_hrir = struct.unpack(f"<{hrirLen}f", f.read(4 * hrirLen))  # Read left HRIR
+                right_hrir = struct.unpack(f"<{hrirLen}f", f.read(4 * hrirLen))  # Read right HRIR
 
-                out.write(f"Mesure {m+1}/{M} :\n")
+                # Write HRIR data to output file
+                out.write(f"Measurement {m+1}/{M} :\n")
                 out.write(f"  Azimuth   : {az:.2f}\n")
                 out.write(f"  Elevation : {el:.2f}\n")
                 out.write(f"  Distance  : {dist:.2f} m\n")
-                out.write(f"  HRIR Gauche : {left_hrir}\n")
-                out.write(f"  HRIR Droit : {right_hrir}\n\n")
-
+                out.write(f"  Left HRIR : {left_hrir}\n")
+                out.write(f"  Right HRIR: {right_hrir}\n\n")
+    
     except FileNotFoundError:
-        print(f"Erreur : Fichier '{filename}' introuvable.")
+        print(f"Error: File '{filename}' not found.")
     except Exception as e:
-        print(f"Erreur lors de l'analyse du fichier : {e}")
+        print(f"Error during file analysis: {e}")
 
-# Exécution automatique du script avec le fichier défini
+# Automatically execute the script with the defined file
 if __name__ == "__main__":
     analyze_bin_file(FILENAME, OUTPUT_FILE)
-    print(f"Analyse terminée. Resultats enregistres dans '{OUTPUT_FILE}'")
+    print(f"Analysis complete. Results saved in '{OUTPUT_FILE}'")

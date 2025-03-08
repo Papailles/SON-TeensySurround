@@ -1,37 +1,78 @@
-# Projet SON Ethan & Giani
+# TeensySurround
 
-Ce projet a pour objectif de modifier un son appliqué en entrée d'un Teensy + AudioShield en utilisant HRTF (Head-Related Transfer Function)
+This project wwas made in the "SON" course offered at INSA Lyon to third year telecommunication students (3TC). The aim of this course is to help students get started to work on a project around embedded real-time audio signal processing.
 
 ## 1. Introduction
 
-La HRTF (Head-Related Transfer Function) décrit comment le son est modifié par la forme de la tête, des oreilles et du torse lorsqu'il se déplace d'une source sonore vers nos oreilles. 
-Cette fonction permet de modéliser ces filtrages acoustiques pour recréer virtuellement la perception spatiale d’un son, c'est-à-dire la localisation précise de sa provenance.
+The Head-Related Transfer Function (HRTF) describes how sound is modified by the shape of the head, ears, and torso as it travels from a sound source to our ears.
+This function allows us to model these acoustic filters in order to virtually recreate the spatial perception of sound, meaning the precise localization of its origin.
 
-La HRIR (Head-Related Impulse Response) est en quelque sorte la version temporelle de la HRTF. 
-En effet, la HRIR représente la réponse impulsionnelle d'un système acoustique (la tête, les oreilles, et le torse) lorsqu'un son impulsionnel le traverse. 
-En appliquant une transformée de Fourier à une HRIR, on obtient la HRTF, qui décrit comment les différentes fréquences d'un son sont modifiées par ce même système. 
-Ainsi, la HRIR permet de générer la HRTF, et inversement, la HRTF est la représentation fréquentielle de la HRIR, essentielle pour simuler la perception spatiale dans des applications audio.
+The Head-Related Impulse Response (HRIR) is essentially the time-domain counterpart of the HRTF.
+Indeed, HRIR represents the impulse response of an acoustic system (the head, ears, and torso) when an impulsive sound passes through it.
+By applying a Fourier transform to an HRIR, we obtain the HRTF, which describes how the different frequencies of a sound are modified by this same system.
+Thus, the HRIR is used to generate the HRTF, and conversely, the HRTF is the frequency-domain representation of the HRIR, crucial for simulating spatial perception in audio applications.
 
-L'idée principale de notre projet est donc de réaliser une convolution entre le signal d'entrée et notre base HRIR, pour recréer un son qui "tourne autour de la tête" de l'auditeur.
+The main idea behind our project is therefore to perform a convolution between the input audio signal and our HRIR dataset, in order to recreate sound that appears to "move around the listener’s head."
 
-## 2. Matériel 
+## 2. Hardware 
 
-Pour réaliser ce projet, nous utilisons un Teensy 4.0 (https://www.pjrc.com/teensy/) accompagné d'un AudioShield (https://www.pjrc.com/store/teensy3_audio.html).
-Pour stocker nos musiques d'entrée et notre table HRIR, nous utilisons aussi une carte SD insérée dans l'AudioShield.
+To carry out this project, we're using a [Teensy 4.0](https://www.pjrc.com/teensy/) coupled with an [AudioShield](https://www.pjrc.com/store/teensy3_audio.html).
 
-A VENIR : Nous aimerions intégrer deux boutons : un pour activer / désactiver l'effet de spatialisation, et un second pour faire un sélecteur basique de musiques.
+We're also using the [audio adaptor board](https://www.pjrc.com/store/teensy3_audio.html) provided by PJRC that integrates a low power stereo audio codec (NXP Semiconductors SGTL5000 codec) and a SD card reader.
 
-## 3. Réalisation technique
+Additionally, to store our input audio files and the HRIR dataset, we're using an SD card inserted into the audio adaptor board.
 
-### 3.1 Pré-traitement
+## Repository content
 
-Avant d'arriver à notre fichier HRIR interprétable par notre Teensy, il faut d'abord trouver une base HRIR de référence.
+This repository contains 4 folders : 
+- `TeensySurround` : the code embedded on the Teensy 
+- `assets` : Python scripts for HRIR & Sofa processing
+- `music` : .wav files used in the Teensy
+- `_old` : previous versions of the project 
 
-La génération d'une base HRIR repose sur la mesure en environnement contrôlé des réponses impulsionnelles de la tête, 
-obtenues en enregistrant les signaux captés par des microphones placés aux positions des oreilles ou sur une tête artificielle. Pour chaque position de la source sonore, 
-les réponses pour l'oreille gauche et droite sont mesurées, traitées, normalisées et ajustées afin d'éliminer les artefacts indésirables, 
-ce qui permet de constituer un ensemble complet de données couvrant une large gamme d'angles. Ces mesures, accompagnées de leurs métadonnées spatiales telles que l'azimut, 
-l'élévation et la distance, sont ensuite organisées dans un fichier au format SOFA (Spatially Oriented Format for Acoustics). 
-Ce format standardisé offre une structure cohérente pour stocker et partager les HRIR, facilitant leur intégration dans divers systèmes de spatialisation audio 
-et garantissant une reproduction fidèle de la perception spatiale du son.
+## The assets folder
 
+The assets folder contains several Python scripts used to process and convert HRIR data from .sofa files into binary (.bin) files compatible with the Teensy 4.0 platform:
+
+- `extractSofaToBin.py` : Converts a .sofa file containing HRIR data into a binary .bin format. The script truncates the HRIR data to a specified length and saves essential metadata like sampling rate, azimuth, elevation, and distance.
+
+- `extractSofaToBin_elev0.py` : Similar to extractSofaToBin.py, but specifically extracts and resamples HRIR data with elevations around 0 degrees. It performs normalization and applies a smooth window function to avoid abrupt transitions in audio playback.
+
+- `analyseHRIR.py` : Analyzes a binary .bin HRIR file, extracting and summarizing information such as sampling rate, HRIR length, number of measurements, and detailed azimuth, elevation, distance, and HRIR data, then saves the analysis in a readable text format (results.txt).
+
+- `extractSofaToWav.py` and `extractSofaToWav_elev0.py` : These scripts export HRIR data from a .sofa file into individual .wav files. The second script (_elev0) specifically filters measurements at 0° elevation.
+
+## HRIR input file
+
+The HRIR file we used for this project is `assets/hrtf_nh2.sofa`, you can find it [here](https://sofacoustics.org/data/database/ari/).
+
+This file is from the ARI Database.
+
+The ARI (Acoustics Research Institute) Database is a comprehensive database of HRIR/HRTF measurements provided in the .sofa format. It contains extensive acoustic measurement data captured from various positions around the human head, which are used to simulate accurate spatial audio experiences.
+
+There is more than just the ARI Database for HRTF datasets, like the CIPIC or Listen databases.
+
+## Importing and using the project
+
+0. Make sure you have an SD card with `assets/hrtf_elev0.bin` file and the content of `music` folder in the root folder of the SD card, then plug the SD card in the SD card slot of the audio adaptor.
+
+1. Follow 'The Teensy Development Framework' at [Inria's website](https://inria-emeraude.github.io/son/lectures/lecture1/#installing-teensyduino) to configure your development environment 
+
+2. Plug headphones in the audio adaptor board
+
+3. Clone this repository and open `TeensySurround/TeensySurround.ino` in Arduino IDE
+
+4. Compile and upload the projet to the Teensy 4.0 board (In the Serial monitor console, you should have the following message : 'Attente de la connexion de l'interface...')
+
+5. Close Arduino IDE, install the python dependencies `pip install -r TeensySurround/requirements.txt` and execute the script `TeensySurround/interface.py`
+
+6. On the interface, click the `Connexion au Teensy` button
+
+7. You're set ! 
+
+## Acknowledgements
+
+Special thanks to:
+
+- Romain Michon & Tanguy Risset, for their course and ongoing support throughout the project.
+- The entire educational team, for their assistance and guidance.

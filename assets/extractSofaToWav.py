@@ -6,52 +6,60 @@ import pysofaconventions as pysofa
 import soundfile as sf
 
 def main():
-    # Nom du fichier SOFA à traiter
-    sofa_filename = "hrtf_nh2.sofa"
+    """
+    Extracts HRIR (Head-Related Impulse Response) data from a SOFA file
+    and saves each measurement as a stereo WAV file.
+
+    The script loads the SOFA file, extracts impulse response data, and writes
+    WAV files corresponding to each measurement with appropriate filenames.
+    """
+    # Input SOFA file
+    sofa_filename = "assets/hrtf_nh2.sofa"
     
-    # Nom du répertoire de sortie
-    output_dir = "hrtfExtract"
+    # Output directory
+    output_dir = "assets/hrtfExtract"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Charger le fichier SOFA
+    # Load the SOFA file
     sofa = pysofa.SOFAFile(sofa_filename, 'r')
     sampleRate = sofa.getSamplingRate()
-    print("Fichier:", sofa_filename)
-    print("SampleRate =", sampleRate)
+    print("File:", sofa_filename)
+    print("Sample Rate:", sampleRate)
 
-    # Data.IR a la forme [M, R, N]
-    IR_data = sofa.getDataIR()  # shape (M, 2, N) -> M mesures, 2 canaux, N échantillons
+    # Extract impulse response data
+    # IR_data shape: (M, 2, N) -> M measurements, 2 channels (left/right), N samples
+    IR_data = sofa.getDataIR()
     M, R, N = IR_data.shape
-    print(f"Mesures M={M}, canaux R={R}, taille HRIR={N}")
+    print(f"Measurements: M={M}, Channels={R}, HRIR Size={N}")
 
-    # Positions (M, 3) : (az, el, distance) en degrés/mètres
+    # Extract source positions (M,3): (azimuth, elevation, distance)
     source_positions = sofa.getVariableValue("SourcePosition")
 
     for m in range(M):
-        # Extraire la HRIR gauche/droite
+        # Extract left and right HRIR
         left = IR_data[m, 0, :]
-        right= IR_data[m, 1, :]
+        right = IR_data[m, 1, :]
 
-        # Récupérer az, el, dist
+        # Retrieve azimuth, elevation, and distance
         az_deg = source_positions[m, 0]
         el_deg = source_positions[m, 1]
-        dist   = source_positions[m, 2]
+        dist = source_positions[m, 2]
 
-        # Construire un nom de fichier
+        # Construct the filename
         az_str = f"{int(round(az_deg)):03d}"
         el_str = f"{int(round(el_deg)):03d}"
         filename = f"az{az_str}_el{el_str}.wav"
         filepath = os.path.join(output_dir, filename)
 
-        # Créer tableau stéréo (N, 2)
+        # Create a stereo array (N, 2)
         stereo_data = np.column_stack((left, right))
 
-        # Écrire en wav (32 bits float pour conserver la dynamique)
+        # Write to WAV file (32-bit float to preserve dynamics)
         sf.write(filepath, stereo_data, int(sampleRate), subtype='FLOAT')
 
         print(f"[{m+1}/{M}] => {filename} | az={az_deg:.1f} deg, el={el_deg:.1f} deg, dist={dist:.2f}m")
 
-    print("Extraction WAV terminée. Fichiers dans le dossier:", output_dir)
+    print("WAV extraction completed. Files saved in:", output_dir)
 
 if __name__ == "__main__":
     main()

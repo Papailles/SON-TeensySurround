@@ -24,7 +24,6 @@ class AngleWidget(QWidget):
         rect = self.rect()
         cx = rect.center().x()
         cy = rect.center().y()
-        # Le rayon est calculé en fonction de la taille du widget, avec une marge de 10 pixels
         radius = min(rect.width(), rect.height()) / 2 - 10
 
         # Dessiner le cercle
