@@ -9,7 +9,7 @@ This project simulates dynamic audio that appears to rotate around the listener.
 The Head-Related Transfer Function (HRTF) describes how sound is modified by the shape of the head, ears, and torso as it travels from a sound source to our ears.
 This function allows us to model these acoustic filters in order to virtually recreate the spatial perception of sound, enabling precise localization of its source.
 
-The Head-Related Impulse Response (HRIR) is essentially the time-domain counterpart of the HRTF.
+The Head-Related Impulse Response (HRIR) is the time-domain counterpart of the HRTF.
 Indeed, HRIR represents the impulse response of an acoustic system (the head, ears, and torso) when an impulsive sound passes through it.
 By applying a Fourier transform to an HRIR, we obtain the HRTF, which describes how the different frequencies of a sound are modified by this same system.
 Thus, the HRIR is used to generate the HRTF, and conversely, the HRTF is the frequency-domain representation of the HRIR, crucial for simulating spatial perception in audio applications.
