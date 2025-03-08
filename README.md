@@ -22,7 +22,7 @@ We're also using the [audio adaptor board](https://www.pjrc.com/store/teensy3_au
 
 Additionally, we're using an SD card inserted into the audio adaptor board to store our input audio files and the HRIR dataset.
 
-## Repository content
+## 3. Repository content
 
 This repository contains 4 folders : 
 - `TeensySurround` : the code embedded on the Teensy 
@@ -30,7 +30,7 @@ This repository contains 4 folders :
 - `music` : .wav files used in the Teensy
 - `_old` : previous versions of the project 
 
-## The assets folder
+## 4. The assets folder
 
 The assets folder contains several Python scripts used to process and convert HRIR data from SOFA (Spatially Oriented Format for Acoustics) (`.sofa`) files into binary (`.bin`) files compatible with the Teensy 4.0 platform:
 
@@ -42,7 +42,7 @@ The assets folder contains several Python scripts used to process and convert HR
 
 - `extractSofaToWav.py` and `extractSofaToWav_elev0.py` : These scripts export HRIR data from a .sofa file into individual .wav files. The second script (_elev0) specifically filters measurements at 0° elevation.
 
-## HRIR input file
+## 5. HRIR input file
 
 The HRIR file we used for this project is `assets/hrtf_nh2.sofa`, available [here](https://sofacoustics.org/data/database/ari/).
 
@@ -52,7 +52,7 @@ The ARI (Acoustics Research Institute) Database is a comprehensive database of H
 
 Other notable HRTF databases include CIPIC and Listen, among others.
 
-## Importing and using the project
+## 6. Importing and using the project
 
 0. Make sure you have an SD card with the `assets/hrtf_elev0.bin` file and the content of `music` folder placed directly in its root directory. Then, insert the SD card into the audio adaptor’s SD card slot."
 
