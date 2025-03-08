@@ -2,7 +2,7 @@
 
 This project was made in the "SON" course offered at INSA Lyon to third year telecommunication students (3TC). The aim of this course is to help students get started with projects involving embedded real-time audio signal processing.
 
-This project simulates dynamic audio that appears to rotate around the listener.
+This project simulates audio that appears to rotate around the listener.
 
 ## 1. Introduction
 
