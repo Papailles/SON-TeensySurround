@@ -76,3 +76,7 @@ Special thanks to:
 
 - Romain Michon & Tanguy Risset, for their course and ongoing support throughout the project.
 - The entire educational team for their assistance and guidance.
+
+<br>
+
+> Giani & Ethan
