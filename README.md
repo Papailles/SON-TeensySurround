@@ -1,11 +1,11 @@
 # TeensySurround
 
-This project was made in the "SON" course offered at INSA Lyon to third year telecommunication students (3TC). The aim of this course is to help students get started to work on a project around embedded real-time audio signal processing.
+This project was made in the "SON" course offered at INSA Lyon to third year telecommunication students (3TC). he aim of this course is to help students get started with projects involving embedded real-time audio signal processing.
 
 ## 1. Introduction
 
 The Head-Related Transfer Function (HRTF) describes how sound is modified by the shape of the head, ears, and torso as it travels from a sound source to our ears.
-This function allows us to model these acoustic filters in order to virtually recreate the spatial perception of sound, meaning the precise localization of its origin.
+This function allows us to model these acoustic filters in order to virtually recreate the spatial perception of sound, enabling precise localization of its source.
 
 The Head-Related Impulse Response (HRIR) is essentially the time-domain counterpart of the HRTF.
 Indeed, HRIR represents the impulse response of an acoustic system (the head, ears, and torso) when an impulsive sound passes through it.
@@ -18,9 +18,9 @@ The main idea behind our project is therefore to perform a convolution between t
 
 To carry out this project, we're using a [Teensy 4.0](https://www.pjrc.com/teensy/) coupled with an [AudioShield](https://www.pjrc.com/store/teensy3_audio.html).
 
-We're also using the [audio adaptor board](https://www.pjrc.com/store/teensy3_audio.html) provided by PJRC that integrates a low power stereo audio codec (NXP Semiconductors SGTL5000 codec) and a SD card reader.
+We're also using the [audio adaptor board](https://www.pjrc.com/store/teensy3_audio.html) provided by PJRC which integrates a low-power stereo audio codec (NXP Semiconductors SGTL5000) and an SD card reader.
 
-Additionally, to store our input audio files and the HRIR dataset, we're using an SD card inserted into the audio adaptor board.
+Additionally, we're using an SD card inserted into the audio adaptor board to store our input audio files and the HRIR dataset.
 
 ## Repository content
 
@@ -32,7 +32,7 @@ This repository contains 4 folders :
 
 ## The assets folder
 
-The assets folder contains several Python scripts used to process and convert HRIR data from .sofa files into binary (.bin) files compatible with the Teensy 4.0 platform:
+The assets folder contains several Python scripts used to process and convert HRIR data from SOFA (Spatially Oriented Format for Acoustics) (`.sofa`) files into binary (`.bin`) files compatible with the Teensy 4.0 platform:
 
 - `extractSofaToBin.py` : Converts a .sofa file containing HRIR data into a binary .bin format. The script truncates the HRIR data to a specified length and saves essential metadata like sampling rate, azimuth, elevation, and distance.
 
@@ -44,17 +44,17 @@ The assets folder contains several Python scripts used to process and convert HR
 
 ## HRIR input file
 
-The HRIR file we used for this project is `assets/hrtf_nh2.sofa`, you can find it [here](https://sofacoustics.org/data/database/ari/).
+The HRIR file we used for this project is `assets/hrtf_nh2.sofa`, available [here](https://sofacoustics.org/data/database/ari/).
 
 This file is from the ARI Database.
 
 The ARI (Acoustics Research Institute) Database is a comprehensive database of HRIR/HRTF measurements provided in the .sofa format. It contains extensive acoustic measurement data captured from various positions around the human head, which are used to simulate accurate spatial audio experiences.
 
-There is more than just the ARI Database for HRTF datasets, like the CIPIC or Listen databases.
+Other notable HRTF databases include CIPIC and Listen, among others.
 
 ## Importing and using the project
 
-0. Make sure you have an SD card with `assets/hrtf_elev0.bin` file and the content of `music` folder in the root folder of the SD card, then plug the SD card in the SD card slot of the audio adaptor.
+0. Make sure you have an SD card with the `assets/hrtf_elev0.bin` file and the content of `music` folder placed directly in its root directory. Then, insert the SD card into the audio adaptor’s SD card slot."
 
 1. Follow 'The Teensy Development Framework' at [Inria's website](https://inria-emeraude.github.io/son/lectures/lecture1/#installing-teensyduino) to configure your development environment 
 
@@ -62,9 +62,9 @@ There is more than just the ARI Database for HRTF datasets, like the CIPIC or Li
 
 3. Clone this repository and open `TeensySurround/TeensySurround.ino` in Arduino IDE
 
-4. Compile and upload the projet to the Teensy 4.0 board (In the Serial monitor console, you should have the following message : 'Attente de la connexion de l'interface...')
+4. Compile and upload the projet to the Teensy 4.0 board (In the Serial Monitor console, you should have the following message : 'Attente de la connexion de l'interface...')
 
-5. Close Arduino IDE, install the python dependencies `pip install -r TeensySurround/requirements.txt` and execute the script `TeensySurround/interface.py`
+5. Close Arduino IDE, install the Python dependencies `pip install -r TeensySurround/requirements.txt` and execute the script `TeensySurround/interface.py`
 
 6. On the interface, click the `Connexion au Teensy` button
 
@@ -75,4 +75,4 @@ There is more than just the ARI Database for HRTF datasets, like the CIPIC or Li
 Special thanks to:
 
 - Romain Michon & Tanguy Risset, for their course and ongoing support throughout the project.
-- The entire educational team, for their assistance and guidance.
+- The entire educational team for their assistance and guidance.
