@@ -28,7 +28,7 @@ Additionally, we're using an SD card inserted into the audio adaptor board to st
 
 This repository contains 4 folders : 
 - `TeensySurround` : the code embedded on the Teensy 
-- `assets` : Python scripts for HRIR & Sofa processing
+- `assets` : Python scripts for HRIR & SOFA processing
 - `music` : .wav files used in the Teensy
 - `_old` : previous versions of the project 
 
